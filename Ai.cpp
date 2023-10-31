@@ -7,8 +7,6 @@ struct triple { int win = 0, loss = 0, tie = 0; };
 
 int inf = 1000000007;
 char hu = 'X', ai = 'O';
-
-// Function to check if there are any empty spots on the board
 bool movesleft(char a[3][3]) {
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
@@ -18,128 +16,139 @@ bool movesleft(char a[3][3]) {
     return false;
 }
 
-// Evaluate the current state of the board
 int eval(char a[3][3]) {
-    // Check rows and columns for a win
     for (int i = 0; i < 3; i++) {
-        if ((a[i][0] == a[i][1] && a[i][1] == a[i][2] && a[i][0] != '_') ||
-            (a[0][i] == a[1][i] && a[1][i] == a[2][i] && a[0][i] != '_')) {
-            return (a[i][0] == ai) ? 10 : -10;
+        if (a[i][0] == a[i][1] && a[i][1] == a[i][2] && a[i][1] != '_') {
+            if (a[i][0] == ai) return 10;
+            else return -10;
         }
     }
-    // Check diagonals for a win
-    if (a[0][0] == a[1][1] && a[1][1] == a[2][2] && a[0][0] != '_') {
-        return (a[0][0] == ai) ? 10 : -10;
+    for (int i = 0; i < 3; i++) {
+        if (a[0][i] == a[1][i] && a[1][i] == a[2][i] && a[2][i] != '_') {
+            if (a[0][i] == ai) return 10;
+            else return -10;
+        }
     }
-    if (a[0][2] == a[1][1] && a[1][1] == a[2][0] && a[0][2] != '_') {
-        return (a[0][2] == ai) ? 10 : -10;
+    if (a[0][0] == a[1][1] && a[1][1] == a[2][2] && a[2][2] != '_') {
+        if (a[0][0] == hu) return -10;
+        else if (a[0][0] == ai) return 10;
+    }
+
+    if (a[0][2] == a[1][1] && a[1][1] == a[2][0] && a[1][1] != '_') {
+        if (a[0][2] == ai) return 10;
+        else if (a[0][2] == hu) return -10;
     }
     return 0;
 }
-
-// Minimax algorithm to find the optimal move
-triple minimax(char b[3][3], bool isMax, triple t) {
+int minimax(char b[3][3], bool isMax) {
     int score = eval(b);
-    if (score == 10 || score == -10) return t + score;
-    if (!movesleft(b)) {
-        t.tie++;
-        return t;
-    }
+    if (score == 10) return score;
+    if (score == -10) return score;
+    if (!movesleft(b)) return 0;
 
     if (isMax) {
-        int best = -inf;
+        int best = INT_MIN;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if (b[i][j] == '_') {
                     b[i][j] = ai;
-                    t = minimax(b, !isMax, t);
+                    best = max(best, minimax(b, !isMax));
                     b[i][j] = '_';
                 }
             }
         }
-        return t;
+        return best;
     } else {
-        int best = inf;
+        int best = INT_MAX;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if (b[i][j] == '_') {
                     b[i][j] = hu;
-                    t = minimax(b, !isMax, t);
+                    best = min(best, minimax(b, !isMax));
                     b[i][j] = '_';
                 }
             }
         }
-        return t;
+        return best;
     }
 }
 
-// Find the best move for AI
 Move find_best(char b[3][3]) {
-    int best = -inf;
+    int best = INT_MIN;
     Move bestMove = {-1, -1};
+
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             if (b[i][j] == '_') {
                 b[i][j] = ai;
-                triple moveEval = minimax(b, false, {0, 0, 0});
+                int moveVal = minimax(b, false);
                 b[i][j] = '_';
-                if (moveEval.win - moveEval.loss > best) {
-                    bestMove = {i, j};
-                    best = moveEval.win - moveEval.loss;
+
+                if (moveVal > best) {
+                    bestMove.row = i;
+                    bestMove.col = j;
+                    best = moveVal;
                 }
             }
         }
     }
-    cout << "AI Move Value: " << best << endl;
+
+    if (bestMove.row == -1 || bestMove.col == -1) {
+        cout << "AI couldn't find a valid move!" << endl;
+        exit(EXIT_FAILURE);
+    }
+    cout << "The value of the best Move is : " << best << endl << endl;
     return bestMove;
 }
 
-// Display the current state of the board
-void display(char b[3][3]) {
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            cout << b[i][j] << ((j == 2) ? '\n' : ' | ');
-        }
-        if (i < 2) cout << "---------\n";
-    }
+void display(char b[3][3]){
+    cout<<b[0][0]<<" | "<<b[0][1]<<" | "<<b[0][2]<<"\n---------\n"<<b[1][0]<<" | "<<b[1][1]<< " | " <<b[1][2]<<"\n---------\n"<<b[2][0]<< " | "<<b[2][1]<< " | " <<b[2][2];
 }
-
 int main() {
+    int playerRow, playerCol;
     while (true) {
-        cout << "Current Board:\n";
+        cout << "Current Board: " << endl;
         display(board);
-        cout << "Your Move (row col): ";
-        int row, col;
-        cin >> row >> col;
-        row--; col--;
-        if (board[row][col] == '_') {
-            board[row][col] = hu;
+        cout << "\nYour Move (Enter row and column separated by space): ";
+        cin >> playerRow >> playerCol;
+        playerRow--;playerCol--;
+        if (board[playerRow][playerCol] == '_') {
+            board[playerRow][playerCol] = hu;
         } else {
-            cout << "Invalid Move!\n";
+            cout << "Invalid Move! Try again." << endl;
             continue;
         }
 
+        // Check if player wins
         if (eval(board) == -10) {
-            cout << "You Win!\n";
-            break;
-        }
-        if (!movesleft(board)) {
-            cout << "It's a Tie!\n";
+            cout << "You Win!" << endl;
             break;
         }
 
-        cout << "AI Move...\n";
-        Move bestMove = find_best(board);
-        board[bestMove.row][bestMove.col] = ai;
-        if (eval(board) == 10) {
-            display(board);
-            cout << "AI Wins!\n";
+        // Check for a tie
+        if (!movesleft(board)) {
+            cout << "It's a Tie!" << endl;
             break;
         }
+
+        // AI's Move
+        cout << "AI is making a move..." << endl;
+        Move bestMove = find_best(board);
+        board[bestMove.row][bestMove.col] = ai;
+        display(board);
+
+        // Check if AI wins
+        if (eval(board) == 10) {
+            cout << "AI Wins! Better luck next time." << endl;
+            break;
+        }
+
+        // Check for a tie again
         if (!movesleft(board)) {
-            cout << "It's a Tie!\n";
+            cout << "It's a Tie!" << endl;
             break;
         }
     }
+
     return 0;
 }
