@@ -1,2 +1,2 @@
 # XO-minimax-ai
-a XO ai using minimax
+a command line XO ai using the minimax algorithm
